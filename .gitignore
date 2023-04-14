@@ -1,0 +1,7 @@
+token.pickle
+credentials.json
+*.json
+*.csv
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+*.xlsx
