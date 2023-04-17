@@ -173,7 +173,7 @@ def Predict():
 
         with open('girls_model.pkl', 'rb') as model:
             load_model = pickle.load(model)
-        predictions['total_usage_predicted_xgb'] = load_model.predict(predictions.drop('Date' , axis=1))
+        predictions['total_usage'] = load_model.predict(predictions.drop('Date' , axis=1))
         predictions['Date'] = predictions['Date'].dt.date.astype(object)
         csv_data = predictions.to_csv('girls_future.csv', index = False , mode='w+')
         json_data = predictions.to_json('girls_future.json', orient="values"  )

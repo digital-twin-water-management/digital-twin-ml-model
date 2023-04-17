@@ -123,14 +123,8 @@ def Feature_engineering():
         json_data = boys_hostel.reset_index().to_json('boys.json', orient="values" )
         return boys_hostel
 
-def Build_model_1():
-    while True:    
-        boys_hostel = Feature_engineering()
+def Build_block_model_1(x_train , y_train , str):
         # Machine Learning
-
-        x_train = boys_hostel[['day','weekday' , 'month']]
-        y_train = boys_hostel['total_usage']
-
         grid_param = {"learning_rate": [0.01, 0.001, 0.1],
                     "n_estimators": [100, 150, 200 , 250 , 300 , 350, 400],
                     "alpha": [0.1,0.75 , 0.5, 1],
@@ -140,24 +134,19 @@ def Build_model_1():
                             scoring="neg_mean_squared_error",
                             cv=4, verbose=1)
         grid_mse.fit(x_train, y_train)
-        print("Best parameters found: ", grid_mse.best_params_)
-        print("Lowest RMSE found: ", np.sqrt(np.abs(grid_mse.best_score_)))
+        print(str+" Best parameters found: ", grid_mse.best_params_)
+        print(str+" Lowest RMSE found: ", np.sqrt(np.abs(grid_mse.best_score_)))
 
         xgb_model = xgb.XGBRegressor(objective ='reg:squarederror', colsample_bytree = 1, **grid_mse.best_params_)
         xgb_model.fit(x_train, y_train)
-        with open('boys_model.pkl', 'w+b') as saved_model:
+        with open(str+'_boys_model.pkl', 'w+b') as saved_model:
             pickle.dump(xgb_model, saved_model)
 
 # This model need 3-4 hours for training  based on i7 processor and 16 gb ram. 
 # so choose trained model wisely
-def Build_model_2():
+def Build_block_model_2(x_train , y_train , str):
     while True:    
-        boys_hostel = Feature_engineering()
         # Machine Learning
-
-        x_train = boys_hostel[['day','weekday' , 'month']]
-        y_train = boys_hostel['total_usage']
-
         estimators = [
             ('XGB', xgb.XGBRegressor()),
             ('svr', SVR()),
@@ -187,11 +176,31 @@ def Build_model_2():
         
         # fitting the model for grid search
         grid.fit(x_train, y_train)
-        print("Best parameters found: ", grid.best_params_)
-        print("Lowest RMSE found: ", np.sqrt(np.abs(grid.best_score_)))
+        print(str + " Best parameters found: ", grid.best_params_)
+        print(str + " Lowest RMSE found: ", np.sqrt(np.abs(grid.best_score_)))
 
-        with open('boys_model.pkl', 'w+b') as saved_model:
+        with open(str+ '_boys_model.pkl', 'w+b') as saved_model:
             pickle.dump(grid, saved_model)
+
+def Build_model():
+    while True:    
+        boys_hostel = Feature_engineering()
+        
+        # Machine Learning
+
+        b1_x_train = boys_hostel[['day','weekday' , 'month']]
+        b1_y_train = boys_hostel['b1_usage']
+        
+        b2_x_train = boys_hostel[['day','weekday' , 'month']]
+        b2_y_train = boys_hostel['b2_usage']
+
+        p1 = multiprocessing.Process(target=Build_block_model_1(b1_x_train , b1_y_train , "b1"))
+        p2 = multiprocessing.Process(target=Build_block_model_1(b2_x_train , b2_y_train , "b2"))
+        p1.start()
+        p2.start()
+        p1.join()
+        p2.join()
+        
 
 
 def Predict():
@@ -203,9 +212,14 @@ def Predict():
         predictions['month'] = predictions['Date'].dt.month
         # predictions = predictions.set_index('Date')
 
-        with open('boys_model.pkl', 'rb') as model:
-            load_model = pickle.load(model)
-        predictions['total_usage_predicted_xgb'] = load_model.predict(predictions.drop('Date' , axis=1))
+        with open('b1_boys_model.pkl', 'rb') as model:
+            load_b1_model = pickle.load(model)
+        with open('b2_boys_model.pkl', 'rb') as model:
+            load_b2_model = pickle.load(model)
+
+        predictions['b1_usage'] = load_b1_model.predict(predictions[['day','weekday' , 'month']])
+        predictions['b2_usage'] = load_b2_model.predict(predictions[['day','weekday' , 'month']])
+        predictions['total_usage'] = predictions['b1_usage'] + predictions['b2_usage']
         predictions['Date'] = predictions['Date'].dt.date.astype(object)
         csv_data = predictions.to_csv('boys_future.csv', index = False , mode='w+')
         json_data = predictions.to_json('boys_future.json', orient="values"  )
