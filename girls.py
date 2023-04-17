@@ -66,6 +66,16 @@ def Feature_engineering():
     data = pull_sheet_data(SCOPES,SPREADSHEET_ID, 'g_block')
     g = pd.DataFrame(data[1:], columns=data[0])
     
+    
+    # for blockchain backend easyness raw data saving
+    g.to_csv('raw_g_block.csv', index = False , mode='w+')
+    g.to_json('raw_g_block.json', orient="values" )
+
+    current_g = g[pd.to_datetime(g['DateTime']).dt.date == pd.to_datetime(g.iloc[-1]['DateTime']).date()]
+
+    current_g.to_csv('raw_today_g_block.csv', index = False , mode='w+')
+    current_g.to_json('raw_today_g_block.json', orient="values" )
+
     g.drop('cputemp' ,axis= 1 , inplace = True)
     g[[ 'Vplus', 'Qv', 'Vminus']] = g[[ 'Vplus', 'Qv', 'Vminus']].astype(float)
     g['DateTime'] = pd.to_datetime( g['DateTime'])
@@ -182,9 +192,9 @@ def Predict():
 
 
 def main():
-    # Feature_engineering()
+    Feature_engineering()
     # Build_model_1()
-    Predict()
+    # Predict()
     
     # creating processes
     # p1 = multiprocessing.Process(target=Predict())
