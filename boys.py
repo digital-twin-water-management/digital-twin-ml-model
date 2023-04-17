@@ -72,10 +72,24 @@ def Feature_engineering():
         b2 = b2[b2.columns[0:5]]
         b2.columns = data[0]
 
+        # for blockchain backend easyness raw data saving
+        b1.to_csv('raw_b1_block.csv', index = False , mode='w+')
+        b1.to_json('raw_b1_block.json', orient="values" )
+        b2.to_csv('raw_b2_block.csv', index = False , mode='w+')
+        b2.to_json('raw_b2_block.json', orient="values" )
+
+        current_b1 = b1[pd.to_datetime(b1['Datetime']).dt.date == pd.to_datetime(b1.iloc[-1]['Datetime']).date()]
+        current_b2 = b2[pd.to_datetime(b2['time']).dt.date == pd.to_datetime(b2.iloc[-1]['time']).date()]
+
+        current_b1.to_csv('raw_today_b1_block.csv', index = False , mode='w+')
+        current_b1.to_json('raw_today_b1_block.json', orient="values" )
+        current_b2.to_csv('raw_today_b2_block.csv', index = False , mode='w+')
+        current_b2.to_json('raw_today_b2_block.json', orient="values" )
+
+        # Feature Engineering
         b1.drop('cputemp' ,axis= 1 , inplace = True)
         b2.drop('cputemp' , axis = 1 ,inplace = True)
 
-        # Feature Engineering
         b1[[ 'Vplus', 'Qv', 'Vminus']] = b1[[ 'Vplus', 'Qv', 'Vminus']].astype(float)
         b2[[ 'Vplus', 'Qv', 'Vminus']] = b2[[ 'Vplus', 'Qv', 'Vminus']].astype(float)
 
@@ -200,6 +214,7 @@ def Build_model():
         p2.start()
         p1.join()
         p2.join()
+
         
 
 
@@ -228,9 +243,9 @@ def Predict():
 
 
 def main():
-    # Feature_engineering()
+    Feature_engineering()
     # Build_model_1()
-    Predict()
+    # Predict()
     
     # creating processes
     # p1 = multiprocessing.Process(target=Predict())
